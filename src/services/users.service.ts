@@ -13,7 +13,7 @@ import {
   UpdateUserDto,
   UserFilter,
 } from 'src/users/dto/users.dto';
-const bcrypt = require('bcrypt');
+import bcrypt from 'bcrypt';
 @Injectable()
 export class UsersService {
   constructor(

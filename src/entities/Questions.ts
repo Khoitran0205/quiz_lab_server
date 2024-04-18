@@ -25,7 +25,7 @@ export class Questions {
   @Column('text', { name: 'content', nullable: true })
   content: string | null;
 
-  @Column('tinyint', {
+  @Column('bigint', {
     name: 'order',
     nullable: true,
   })

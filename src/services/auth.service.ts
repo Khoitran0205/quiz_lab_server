@@ -11,10 +11,8 @@ import { IsNull, Repository } from 'typeorm';
 import * as moment from 'moment';
 import { JwtService } from '@nestjs/jwt';
 import { mapper } from 'src/config/mapper';
-import { Roles } from 'src/entities/Roles';
-import { RolesEnum } from 'src/shared/roles.enum';
 
-const bcrypt = require('bcrypt');
+import bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -22,8 +20,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @InjectRepository(Users)
     private usersRepository: Repository<Users>,
-    @InjectRepository(Roles)
-    private rolesRepository: Repository<Roles>,
+    // @InjectRepository(Roles)
+    // private rolesRepository: Repository<Roles>,
     private configService: ConfigService,
   ) {}
 
@@ -84,10 +82,10 @@ export class AuthService {
       password,
       firstName,
       lastName,
-      gender,
-      phoneNumber,
-      address,
-      dateOfBirth,
+      // gender,
+      // phoneNumber,
+      // address,
+      // dateOfBirth,
     } = dto;
 
     if (!email || !password || !firstName || !lastName)
@@ -114,19 +112,9 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const existedRole = await this.rolesRepository.findOne({
-      where: {
-        name: RolesEnum.MEMBER,
-        deletedAt: IsNull(),
-      },
-    });
-    if (!existedRole)
-      throw new HttpException('Role not found', HttpStatus.BAD_REQUEST);
-
     const newUser = await this.usersRepository.save(
       this.usersRepository.create({
         ...dto,
-        roleId: existedRole.id,
         password: hashedPassword,
         createdAt: moment().format(),
       }),
