@@ -12,7 +12,7 @@ import * as moment from 'moment';
 import { JwtService } from '@nestjs/jwt';
 import { mapper } from 'src/config/mapper';
 
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -20,8 +20,6 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @InjectRepository(Users)
     private usersRepository: Repository<Users>,
-    // @InjectRepository(Roles)
-    // private rolesRepository: Repository<Roles>,
     private configService: ConfigService,
   ) {}
 
@@ -77,28 +75,7 @@ export class AuthService {
   }
 
   async signUp(dto: SignUpDto) {
-    const {
-      email,
-      password,
-      firstName,
-      lastName,
-      // gender,
-      // phoneNumber,
-      // address,
-      // dateOfBirth,
-    } = dto;
-
-    if (!email || !password || !firstName || !lastName)
-      throw new HttpException(
-        'Email or password or first name or last name cannot be empty',
-        HttpStatus.BAD_REQUEST,
-      );
-
-    if (password.length < 8)
-      throw new HttpException(
-        'Password must be at least 8 characters',
-        HttpStatus.BAD_REQUEST,
-      );
+    const { email, password } = dto;
 
     const exitedUser = await this.usersRepository.findOne({
       where: {

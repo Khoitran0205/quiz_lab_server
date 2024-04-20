@@ -6,7 +6,6 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Quizzes } from './Quizzes';
@@ -22,6 +21,13 @@ export class Rooms {
   @AutoMap()
   @Column('bigint', { name: 'quiz_id', nullable: true })
   quizId: string | null;
+
+  @Column('character varying', {
+    name: 'code',
+    nullable: true,
+    length: 255,
+  })
+  code: string | null;
 
   @Column('boolean', {
     name: 'is_active',

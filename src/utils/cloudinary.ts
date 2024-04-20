@@ -12,33 +12,33 @@ export class CloudinaryService {
     });
   }
 
-  async uploadMoviePoster(base64: string) {
+  async uploadQuizCoverPicture(base64: string) {
     try {
       return await cloudinary.uploader.upload(base64, {
         resource_type: 'image',
-        upload_preset: 'movie_setups',
+        upload_preset: 'quiz_setups',
       });
     } catch (error) {
       throw new HttpException(error, HttpStatus.BAD_REQUEST);
     }
   }
 
-  async uploadActorAvatar(base64: string) {
+  async uploadQuestionMedia(base64: string) {
     try {
       return await cloudinary.uploader.upload(base64, {
         resource_type: 'image',
-        upload_preset: 'actor_setups',
+        upload_preset: 'question_setups',
       });
     } catch (error) {
       throw new HttpException(error, HttpStatus.BAD_REQUEST);
     }
   }
 
-  async uploadNewsPicture(base64: string) {
+  async uploadExplanationMedia(base64: string) {
     try {
       return await cloudinary.uploader.upload(base64, {
         resource_type: 'image',
-        upload_preset: 'news_setups',
+        upload_preset: 'explanation_setups',
       });
     } catch (error) {
       throw new HttpException(error, HttpStatus.BAD_REQUEST);

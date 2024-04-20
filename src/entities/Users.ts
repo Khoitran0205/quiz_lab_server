@@ -64,7 +64,7 @@ export class Users {
 
   @AutoMap()
   @Column('date', { name: 'date_of_birth', nullable: true })
-  dateOfBirth: string | null;
+  dateOfBirth: Date | null;
 
   @Column('timestamp without time zone', { name: 'created_at', nullable: true })
   createdAt: Date | null;

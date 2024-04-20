@@ -26,10 +26,10 @@ export class Questions {
   content: string | null;
 
   @Column('bigint', {
-    name: 'order',
+    name: 'sort_order',
     nullable: true,
   })
-  order: number | null;
+  sortOrder: number | null;
 
   @Column('text', {
     name: 'media_url',
@@ -37,14 +37,14 @@ export class Questions {
   })
   mediaUrl: string | null;
 
-  @Column('text', { name: 'explaination_content', nullable: true })
-  explainationContent: string | null;
+  @Column('text', { name: 'explanation_content', nullable: true })
+  explanationContent: string | null;
 
   @Column('text', {
-    name: 'explaination_media_url',
+    name: 'explanation_media_url',
     nullable: true,
   })
-  explainationMediaUrl: string | null;
+  explanationMediaUrl: string | null;
 
   @ManyToOne(() => Quizzes, (quizzes) => quizzes.questions)
   @JoinColumn([{ name: 'quiz_id', referencedColumnName: 'id' }])

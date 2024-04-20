@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { addProfile } from '@automapper/core';
 import { mapper } from './config/mapper';
@@ -20,6 +20,8 @@ async function bootstrap() {
   configAutoMapper();
   configSwagger(app);
 
+  app.useGlobalPipes(new ValidationPipe());
+
   await app.listen(process.env.APP_PORT || 3001, () => {
     console.log(`App listening in ${process.env.APP_PORT || 3001}`);
   });
@@ -32,8 +34,8 @@ function configAutoMapper() {
 
 function configSwagger(app: INestApplication) {
   const config = new DocumentBuilder()
-    .setTitle('CineWorld')
-    .setDescription('CineWorld APIs document')
+    .setTitle('QuizLab')
+    .setDescription('QuizLab APIs document')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

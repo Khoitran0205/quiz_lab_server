@@ -3,8 +3,6 @@ import {
   Column,
   Entity,
   Index,
-  JoinColumn,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -22,11 +20,11 @@ export class Quizzes {
   title: string | null;
 
   @Column('character varying', {
-    name: 'desciption',
+    name: 'description',
     nullable: true,
-    length: 255,
+    length: 1000,
   })
-  desciption: string | null;
+  description: string | null;
 
   @Column('text', {
     name: 'cover_picture',
