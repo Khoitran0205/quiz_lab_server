@@ -1,16 +1,22 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as moment from 'moment';
 import { Options } from 'src/entities/Options';
 import { Questions } from 'src/entities/Questions';
 import { Quizzes } from 'src/entities/Quizzes';
-import { CreateQuizDto, QuizFilter } from 'src/quizzes/dto/quizzes.dto';
+import {
+  CreateQuestionDto,
+  CreateQuizDto,
+  QuizFilter,
+  UpdateQuizDto,
+} from 'src/quizzes/dto/quizzes.dto';
 import {
   PageMetaDto,
   PaginationDto,
   getSkip,
 } from 'src/shared/pagination/pagination.dto';
 import { CloudinaryService } from 'src/utils/cloudinary';
-import { EntityManager, IsNull, Repository } from 'typeorm';
+import { EntityManager, In, IsNull, Repository } from 'typeorm';
 
 @Injectable()
 export class QuizzesService {
@@ -50,43 +56,11 @@ export class QuizzesService {
 
           const { id: quizId } = newQuiz;
 
-          for (let i = 0; i < questions?.length; i++) {
-            const question = questions[i];
-            const { options, mediaUrl, explanationMediaUrl } = question;
-
-            const newMediaUrl = mediaUrl
-              ? (await this.cloudinaryService.uploadQuestionMedia(mediaUrl))
-                  ?.url
-              : null;
-
-            const newExplanationMediaUrl = explanationMediaUrl
-              ? (
-                  await this.cloudinaryService.uploadExplanationMedia(
-                    explanationMediaUrl,
-                  )
-                )?.url
-              : null;
-
-            const { id: questionId } = await entityManager.save(
-              Questions,
-              entityManager.create(Questions, {
-                ...question,
-                quizId,
-                mediaUrl: newMediaUrl,
-                explanationMediaUrl: newExplanationMediaUrl,
-              }),
-            );
-
-            await this.validateOptions(options);
-            const preparedOptions = options?.map((option) => {
-              return entityManager.create(Options, {
-                ...option,
-                questionId,
-              });
-            });
-
-            await entityManager.insert(Options, preparedOptions);
-          }
+          await this.createQuestionsAndOptionsForQuiz(
+            entityManager,
+            quizId,
+            questions,
+          );
 
           return newQuiz;
         },
@@ -95,9 +69,52 @@ export class QuizzesService {
       return newQuiz;
     } catch (error) {
       throw new HttpException(
-        `Failed to create quizz - ${error}`,
+        `Failed to create quiz - ${error}`,
         HttpStatus.BAD_REQUEST,
       );
+    }
+  }
+
+  async createQuestionsAndOptionsForQuiz(
+    entityManager: EntityManager,
+    quizId: string,
+    questions: CreateQuestionDto[],
+  ) {
+    for (let i = 0; i < questions?.length; i++) {
+      const question = questions[i];
+      const { options, mediaUrl, explanationMediaUrl } = question;
+
+      const newMediaUrl = mediaUrl
+        ? (await this.cloudinaryService.uploadQuestionMedia(mediaUrl))?.url
+        : null;
+
+      const newExplanationMediaUrl = explanationMediaUrl
+        ? (
+            await this.cloudinaryService.uploadExplanationMedia(
+              explanationMediaUrl,
+            )
+          )?.url
+        : null;
+
+      const { id: questionId } = await entityManager.save(
+        Questions,
+        entityManager.create(Questions, {
+          ...question,
+          quizId,
+          mediaUrl: newMediaUrl,
+          explanationMediaUrl: newExplanationMediaUrl,
+        }),
+      );
+
+      await this.validateOptions(options);
+      const preparedOptions = options?.map((option) => {
+        return entityManager.create(Options, {
+          ...option,
+          questionId,
+        });
+      });
+
+      await entityManager.insert(Options, preparedOptions);
     }
   }
 
@@ -163,5 +180,144 @@ export class QuizzesService {
       throw new HttpException('quiz not found', HttpStatus.BAD_REQUEST);
 
     return quiz;
+  }
+
+  async update(id: string, dto: UpdateQuizDto, updatedBy: string) {
+    try {
+      const existedQuiz = await this.validateExistedQuiz(id, updatedBy);
+      const { coverPicture: existedCoverPicture, questions: existedQuestions } =
+        existedQuiz;
+
+      const updatedQuiz = await this.dataSource.transaction(
+        async (entityManager) => {
+          const {
+            title,
+            description,
+            coverPicture,
+            isDeleteCoverPicture,
+            questions,
+          } = dto;
+
+          if (
+            (isDeleteCoverPicture?.toString() === 'true' || coverPicture) &&
+            existedCoverPicture
+          )
+            await this.cloudinaryService.deletePicture(existedCoverPicture);
+
+          const newCoverPicture = coverPicture
+            ? (
+                await this.cloudinaryService.uploadQuizCoverPicture(
+                  coverPicture,
+                )
+              )?.url
+            : isDeleteCoverPicture?.toString() === 'true'
+            ? null
+            : existedCoverPicture;
+
+          const updatedQuiz = await entityManager.save(Quizzes, {
+            ...existedQuiz,
+            title,
+            description,
+            coverPicture: newCoverPicture,
+            updatedAt: moment().format(),
+            updatedBy,
+          });
+
+          if (questions)
+            await this.updateQuestionsAndOptionsForQuiz(
+              entityManager,
+              id,
+              questions,
+              existedQuestions,
+            );
+
+          return updatedQuiz;
+        },
+      );
+
+      return updatedQuiz;
+    } catch (error) {
+      throw new HttpException(
+        `Failed to update quiz - ${error}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  async validateExistedQuiz(quizId: string, userId: string) {
+    const existedQuiz = await this.quizzesRepository.findOne({
+      where: {
+        id: quizId,
+        deletedAt: IsNull(),
+      },
+      relations: ['questions'],
+    });
+
+    if (!existedQuiz)
+      throw new HttpException('quiz not found', HttpStatus.BAD_REQUEST);
+
+    const { createdBy } = existedQuiz;
+    if (userId !== createdBy)
+      throw new HttpException('unauthorized', HttpStatus.BAD_REQUEST);
+
+    return existedQuiz;
+  }
+
+  async updateQuestionsAndOptionsForQuiz(
+    entityManager: EntityManager,
+    quizId: string,
+    questions: CreateQuestionDto[],
+    existedQuestions: Questions[],
+  ) {
+    await this.deleteQuestionsAndOptionsByQuizId(
+      entityManager,
+      quizId,
+      existedQuestions,
+    );
+
+    await this.createQuestionsAndOptionsForQuiz(
+      entityManager,
+      quizId,
+      questions,
+    );
+  }
+
+  async deleteQuestionsAndOptionsByQuizId(
+    entityManager: EntityManager,
+    quizId: string,
+    existedQuestions: Questions[],
+  ) {
+    const prepareDeletedUrl = [];
+    const listQuestionId = [];
+    for (let i = 0; i < existedQuestions?.length; i++) {
+      const question = existedQuestions[i];
+      const { id, mediaUrl, explanationMediaUrl } = question;
+      if (mediaUrl) prepareDeletedUrl.push(mediaUrl);
+
+      if (explanationMediaUrl) prepareDeletedUrl.push(explanationMediaUrl);
+
+      listQuestionId.push(id);
+    }
+
+    await entityManager.delete(Options, { questionId: In(listQuestionId) });
+    await entityManager.delete(Questions, { quizId });
+
+    await this.cloudinaryService.deletePicture(prepareDeletedUrl);
+  }
+
+  async remove(id: string, deletedBy: string) {
+    try {
+      const existedQuiz = await this.validateExistedQuiz(id, deletedBy);
+      return await this.quizzesRepository.save({
+        ...existedQuiz,
+        deletedAt: moment().format(),
+        deletedBy,
+      });
+    } catch (error) {
+      throw new HttpException(
+        `Failed to delete quiz - ${error}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 }

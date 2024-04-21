@@ -1,4 +1,4 @@
-import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
@@ -72,4 +72,12 @@ export class CreateQuizDto {
   @ArrayMinSize(MIN_QUESTIONS)
   @Type(() => CreateQuestionDto)
   questions: CreateQuestionDto[];
+}
+
+export class UpdateQuizDto extends PartialType(CreateQuizDto) {
+  @ApiProperty({ required: false })
+  title: string | null;
+
+  @ApiProperty({ required: false, default: false })
+  isDeleteCoverPicture: boolean | null;
 }

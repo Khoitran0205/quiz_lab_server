@@ -10,7 +10,7 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import { CreateQuizDto, QuizFilter } from './dto/quizzes.dto';
+import { CreateQuizDto, QuizFilter, UpdateQuizDto } from './dto/quizzes.dto';
 import { QuizzesService } from 'src/services/quizzes.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
@@ -54,11 +54,29 @@ export class QuizzesController {
     };
   }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateQuizDto: UpdateQuizDto) {
-  //   return this.quizzesService.update(+id, updateQuizDto);
-  // }
+  @ApiOperation({ summary: 'Update quiz by id' })
+  @Patch(':id')
+  async update(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() updateQuizDto: UpdateQuizDto,
+  ) {
+    const { id: updatedBy } = req?.user;
+    const data = await this.quizzesService.update(id, updateQuizDto, updatedBy);
+    return {
+      message: 'update successfully',
+      data,
+    };
+  }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {}
+  @ApiOperation({ summary: 'Delete quiz by id' })
+  @Delete(':id')
+  async remove(@Req() req, @Param('id') id: string) {
+    const { id: deletedBy } = req?.user;
+    const data = await this.quizzesService.remove(id, deletedBy);
+    return {
+      message: 'delete successfully',
+      data,
+    };
+  }
 }

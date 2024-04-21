@@ -45,11 +45,34 @@ export class CloudinaryService {
     }
   }
 
-  async deletePicture(data: string[]) {
+  async deletePicture(data: string[] | string) {
     try {
-      await cloudinary.api.delete_resources(data);
+      const prepareDeletedUrl = await this.prepareListDeletedUrl(data);
+      await cloudinary.api.delete_resources(prepareDeletedUrl);
     } catch (error) {
       throw new HttpException(error, HttpStatus.BAD_REQUEST);
     }
+  }
+
+  async prepareListDeletedUrl(data: string[] | string) {
+    return typeof data === 'string'
+      ? [data]?.map((url) => {
+          const secondToLastSlashIndex = url?.lastIndexOf(
+            '/',
+            url.lastIndexOf('/') - 1,
+          );
+          return url
+            ?.slice(secondToLastSlashIndex + 1)
+            ?.replace(/\.[^/.]+$/, '');
+        })
+      : data?.map((url) => {
+          const secondToLastSlashIndex = url?.lastIndexOf(
+            '/',
+            url.lastIndexOf('/') - 1,
+          );
+          return url
+            ?.slice(secondToLastSlashIndex + 1)
+            ?.replace(/\.[^/.]+$/, '');
+        });
   }
 }
