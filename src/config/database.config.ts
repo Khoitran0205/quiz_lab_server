@@ -18,9 +18,9 @@ export class PostgresDbConfig implements TypeOrmOptionsFactory {
       entities: [join(__dirname, '..', '/entities/*.{ts,js}')],
       synchronize: this.configService.get<string>('DATABASE_SYNC') === 'true',
       logging: true,
-      // ssl: {
-      //   rejectUnauthorized: false,
-      // },
+      ssl: {
+        rejectUnauthorized: false,
+      },
     };
   }
 }
