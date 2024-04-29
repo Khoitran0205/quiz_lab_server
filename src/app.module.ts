@@ -7,6 +7,7 @@ import { AutomapperModule } from '@automapper/nestjs';
 import { classes } from '@automapper/classes';
 import { UsersModule } from './users/users.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
+import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { QuizzesModule } from './quizzes/quizzes.module';
     AuthModule,
     UsersModule,
     QuizzesModule,
+    RoomsModule,
   ],
   controllers: [],
   providers: [PostgresDbConfig],
