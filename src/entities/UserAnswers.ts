@@ -10,6 +10,7 @@ import {
 import { Users } from './Users';
 import { UserRooms } from './UserRooms';
 import { Options } from './Options';
+import { Questions } from './Questions';
 
 @Index('user_answers_pkey', ['id'], { unique: true })
 @Entity('user_answers', { schema: 'public' })
@@ -21,6 +22,10 @@ export class UserAnswers {
   @AutoMap()
   @Column('bigint', { name: 'user_room_id', nullable: true })
   userRoomId: string | null;
+
+  @AutoMap()
+  @Column('bigint', { name: 'question_id', nullable: true })
+  questionId: string | null;
 
   @AutoMap()
   @Column('bigint', { name: 'option_id', nullable: true })
@@ -43,4 +48,8 @@ export class UserAnswers {
   @ManyToOne(() => Options, (options) => options.userAnswers)
   @JoinColumn([{ name: 'option_id', referencedColumnName: 'id' }])
   option: Options;
+
+  @ManyToOne(() => Questions, (questions) => questions.userAnswers)
+  @JoinColumn([{ name: 'question_id', referencedColumnName: 'id' }])
+  question: Questions;
 }

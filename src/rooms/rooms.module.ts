@@ -9,10 +9,18 @@ import { Quizzes } from 'src/entities/Quizzes';
 import { Questions } from 'src/entities/Questions';
 import { Options } from 'src/entities/Options';
 import { CloudinaryService } from 'src/utils/cloudinary';
+import { UserAnswers } from 'src/entities/UserAnswers';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Rooms, UserRooms, Quizzes, Questions, Options]),
+    TypeOrmModule.forFeature([
+      Rooms,
+      UserRooms,
+      UserAnswers,
+      Quizzes,
+      Questions,
+      Options,
+    ]),
   ],
   controllers: [RoomsController],
   providers: [RoomsService, QuizzesService, CloudinaryService],

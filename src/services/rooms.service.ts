@@ -3,6 +3,7 @@ import {
   CreateRoomDto,
   UserAnswerQuestionDto,
   UserJoinRoomDto,
+  UserRoomFilter,
 } from '../rooms/dto/rooms.dto';
 import { Rooms } from 'src/entities/Rooms';
 import { IsNull, Repository } from 'typeorm';
@@ -16,6 +17,14 @@ import {
 } from 'src/rooms/rooms.constant';
 import * as moment from 'moment';
 import { UserRooms } from 'src/entities/UserRooms';
+import { UserAnswers } from 'src/entities/UserAnswers';
+import { Questions } from 'src/entities/Questions';
+import { MAX_QUESTION_SCORE } from 'src/shared/global.constants';
+import {
+  PageMetaDto,
+  PaginationDto,
+  getSkip,
+} from 'src/shared/pagination/pagination.dto';
 
 @Injectable()
 export class RoomsService {
@@ -24,6 +33,10 @@ export class RoomsService {
     private roomsRepository: Repository<Rooms>,
     @InjectRepository(UserRooms)
     private userRoomsRepository: Repository<UserRooms>,
+    @InjectRepository(UserAnswers)
+    private userAnswersRepository: Repository<UserAnswers>,
+    @InjectRepository(Questions)
+    private questionsRepository: Repository<Questions>,
     private readonly quizzesService: QuizzesService,
   ) {}
 
@@ -97,7 +110,13 @@ export class RoomsService {
 
     const { id: roomId } = existedRoom;
 
-    await this.validateUserHasJoinedRoom(roomId, userId);
+    const existedUserRoom = await this.checkIfUserHasJoinedRoom(roomId, userId);
+    if (existedUserRoom)
+      throw new HttpException(
+        'user has joined this room',
+        HttpStatus.BAD_REQUEST,
+      );
+
     return await this.userRoomsRepository.save(
       this.userRoomsRepository.create({
         userId,
@@ -108,7 +127,7 @@ export class RoomsService {
     );
   }
 
-  async validateUserHasJoinedRoom(roomId: string, userId: string) {
+  async checkIfUserHasJoinedRoom(roomId: string, userId: string) {
     const existedUserRoom = await this.userRoomsRepository.findOne({
       where: {
         userId,
@@ -116,20 +135,152 @@ export class RoomsService {
       },
     });
 
-    if (existedUserRoom)
+    return existedUserRoom;
+  }
+
+  async answerQuestion(dto: UserAnswerQuestionDto, userId: string) {
+    const { roomId, questionId, optionId, timer } = dto;
+
+    const existedUserRoom = await this.checkIfUserHasJoinedRoom(roomId, userId);
+    if (!existedUserRoom)
       throw new HttpException(
-        'user has joined this room',
+        'user has not joined this room',
+        HttpStatus.BAD_REQUEST,
+      );
+
+    const { id: userRoomId, totalScore } = existedUserRoom;
+
+    const { question, option } = await this.validateQuestionAndOption(
+      questionId,
+      optionId,
+    );
+
+    await this.validateUserAnswer(userRoomId, questionId);
+
+    const { timer: questionTimer } = question;
+    const { isCorrect } = option;
+
+    const userAnswerScore = await this.calculateUserAnswerScore(
+      timer,
+      questionTimer,
+      isCorrect,
+    );
+
+    const newUserAnswer = await this.userAnswersRepository.save(
+      this.userAnswersRepository.create({
+        userRoomId,
+        questionId,
+        optionId,
+        answerSpeed: timer,
+        score: userAnswerScore,
+      }),
+    );
+
+    await this.userRoomsRepository.save({
+      ...existedUserRoom,
+      totalScore: totalScore + userAnswerScore,
+    });
+
+    return newUserAnswer;
+  }
+
+  async validateUserAnswer(userRoomId: string, questionId: string) {
+    const existedUserAnswers = await this.userAnswersRepository.findOne({
+      where: {
+        userRoomId,
+        questionId,
+      },
+    });
+    if (existedUserAnswers)
+      throw new HttpException(
+        'user has already answered this question',
         HttpStatus.BAD_REQUEST,
       );
   }
 
-  async answerQuestion(dto: UserAnswerQuestionDto, userId: string) {}
+  async validateQuestionAndOption(questionId: string, optionId: string) {
+    const existedQuestion = await this.questionsRepository.findOne({
+      where: {
+        id: questionId,
+      },
+      relations: ['options'],
+    });
+    if (!existedQuestion)
+      throw new HttpException('question not found', HttpStatus.BAD_REQUEST);
 
-  // findAll() {}
+    const { options } = existedQuestion;
+    const existedOption = options.find((option) => option.id === optionId);
+    if (!existedOption)
+      throw new HttpException('option not found', HttpStatus.BAD_REQUEST);
 
-  // findOne() {}
+    return {
+      question: existedQuestion,
+      option: existedOption,
+    };
+  }
 
-  // update() {}
+  async calculateUserAnswerScore(
+    timer: number,
+    questionTimer: number,
+    isCorrect: boolean,
+  ) {
+    return isCorrect.toString() === 'true'
+      ? (MAX_QUESTION_SCORE / questionTimer) * (questionTimer - timer)
+      : 0;
+  }
 
-  // remove() {}
+  async updateRankOfARoom(roomId: string) {
+    const existedRoom = await this.findRoomById(roomId);
+    if (!existedRoom)
+      throw new HttpException('room not found', HttpStatus.BAD_REQUEST);
+
+    const existedUserRooms = await this.userRoomsRepository.find({
+      where: {
+        roomId,
+      },
+    });
+
+    if (existedUserRooms?.length > 0) {
+      existedUserRooms?.sort((a, b) => b.totalScore - a.totalScore);
+      const preparedSortedUserRooms = existedUserRooms?.map(
+        (userRoom, index) => {
+          const rank = index + 1;
+          return {
+            ...userRoom,
+            rank,
+          };
+        },
+      );
+
+      return await this.userRoomsRepository.save(preparedSortedUserRooms);
+    }
+
+    return {};
+  }
+
+  async getUsers(dto: UserRoomFilter) {
+    const { page, take, roomId } = dto;
+    const [userRooms, count] = await this.userRoomsRepository
+      .createQueryBuilder('uR')
+      .leftJoinAndSelect('uR.user', 'user')
+      .where(
+        `
+        uR.userId is not null
+        ${roomId ? ' and uR.roomId = :roomId' : ''}
+        `,
+        {
+          ...(roomId ? { roomId } : {}),
+        },
+      )
+      .orderBy('uR.rank', 'ASC')
+      .take(take)
+      .skip(getSkip({ page, take }))
+      .getManyAndCount();
+
+    return new PaginationDto(userRooms, <PageMetaDto>{
+      page,
+      take,
+      totalCount: count,
+    });
+  }
 }

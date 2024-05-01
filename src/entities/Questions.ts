@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Quizzes } from './Quizzes';
 import { Options } from './Options';
+import { UserAnswers } from './UserAnswers';
 
 @Index('questions_pkey', ['id'], { unique: true })
 @Entity('questions', { schema: 'public' })
@@ -58,4 +59,7 @@ export class Questions {
 
   @OneToMany(() => Options, (options) => options.question)
   options: Options[];
+
+  @OneToMany(() => UserAnswers, (userAnswers) => userAnswers.question)
+  userAnswers: UserAnswers[];
 }

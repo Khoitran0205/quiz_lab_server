@@ -6,12 +6,15 @@ import {
   Param,
   UseGuards,
   Req,
+  Get,
+  Query,
 } from '@nestjs/common';
 import { RoomsService } from '../services/rooms.service';
 import {
   CreateRoomDto,
   UserAnswerQuestionDto,
   UserJoinRoomDto,
+  UserRoomFilter,
 } from './dto/rooms.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -35,6 +38,16 @@ export class RoomsController {
     };
   }
 
+  @ApiOperation({ summary: 'Get users of a room' })
+  @Get('get-users/:id')
+  async getUsers(@Query() dto: UserRoomFilter) {
+    const data = await this.roomsService.getUsers(dto);
+    return {
+      message: 'get successfully',
+      data,
+    };
+  }
+
   @ApiOperation({ summary: 'User joins room' })
   @Post()
   async joinRoom(@Req() req, @Body() dto: UserJoinRoomDto) {
@@ -47,12 +60,23 @@ export class RoomsController {
   }
 
   @ApiOperation({ summary: 'User answers question' })
-  @Post()
+  @Post('answer-question')
   async answerQuestion(@Req() req, @Body() dto: UserAnswerQuestionDto) {
     const { id: userId } = req?.user;
     const data = await this.roomsService.answerQuestion(dto, userId);
     return {
       message: 'answer successfully',
+      data,
+    };
+  }
+
+  @ApiOperation({ summary: 'Update rank of a room' })
+  @Patch('end-room/:id')
+  async updateRankOfARoom(@Req() req, @Param('id') id: string) {
+    // const { id: updatedBy } = req?.user;
+    const data = await this.roomsService.updateRankOfARoom(id);
+    return {
+      message: 'update successfully',
       data,
     };
   }
