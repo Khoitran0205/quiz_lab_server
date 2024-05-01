@@ -7,6 +7,7 @@ import { Quizzes } from 'src/entities/Quizzes';
 import {
   CreateQuestionDto,
   CreateQuizDto,
+  QuestionFilter,
   QuizFilter,
   UpdateQuizDto,
 } from 'src/quizzes/dto/quizzes.dto';
@@ -319,5 +320,31 @@ export class QuizzesService {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  async findQuestionsByQuizId(dto: QuestionFilter) {
+    const { page, take, quizId } = dto;
+    const [questions, count] = await this.questionsRepository
+      .createQueryBuilder('q')
+      .leftJoinAndSelect('q.options', 'options')
+      .where(
+        `
+        q.quizId is not null
+        ${quizId ? ' and q.quizId = :quizId' : ''}
+        `,
+        {
+          ...(quizId ? { quizId } : {}),
+        },
+      )
+      .orderBy('q.sortOrder', 'ASC')
+      .take(take)
+      .skip(getSkip({ page, take }))
+      .getManyAndCount();
+
+    return new PaginationDto(questions, <PageMetaDto>{
+      page,
+      take,
+      totalCount: count,
+    });
   }
 }

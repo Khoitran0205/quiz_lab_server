@@ -8,7 +8,11 @@ import {
   Req,
 } from '@nestjs/common';
 import { RoomsService } from '../services/rooms.service';
-import { CreateRoomDto, UserJoinRoomDto } from './dto/rooms.dto';
+import {
+  CreateRoomDto,
+  UserAnswerQuestionDto,
+  UserJoinRoomDto,
+} from './dto/rooms.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
@@ -31,7 +35,7 @@ export class RoomsController {
     };
   }
 
-  @ApiOperation({ summary: 'User join room' })
+  @ApiOperation({ summary: 'User joins room' })
   @Post()
   async joinRoom(@Req() req, @Body() dto: UserJoinRoomDto) {
     const { id: userId } = req?.user;
@@ -42,15 +46,16 @@ export class RoomsController {
     };
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.roomsService.findAll();
-  // }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.roomsService.findOne(+id);
-  // }
+  @ApiOperation({ summary: 'User answers question' })
+  @Post()
+  async answerQuestion(@Req() req, @Body() dto: UserAnswerQuestionDto) {
+    const { id: userId } = req?.user;
+    const data = await this.roomsService.answerQuestion(dto, userId);
+    return {
+      message: 'answer successfully',
+      data,
+    };
+  }
 
   @ApiOperation({ summary: 'End quiz room' })
   @Patch('end-room/:id')

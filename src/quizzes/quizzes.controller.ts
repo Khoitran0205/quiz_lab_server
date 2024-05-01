@@ -10,7 +10,12 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import { CreateQuizDto, QuizFilter, UpdateQuizDto } from './dto/quizzes.dto';
+import {
+  CreateQuizDto,
+  QuestionFilter,
+  QuizFilter,
+  UpdateQuizDto,
+} from './dto/quizzes.dto';
 import { QuizzesService } from 'src/services/quizzes.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
@@ -76,6 +81,16 @@ export class QuizzesController {
     const data = await this.quizzesService.remove(id, deletedBy);
     return {
       message: 'delete successfully',
+      data,
+    };
+  }
+
+  @ApiOperation({ summary: 'Get questions by quiz id' })
+  @Get('get-questions/:id')
+  async findQuestionsByQuizId(@Query() dto: QuestionFilter) {
+    const data = await this.quizzesService.findQuestionsByQuizId(dto);
+    return {
+      message: 'get successfully',
       data,
     };
   }

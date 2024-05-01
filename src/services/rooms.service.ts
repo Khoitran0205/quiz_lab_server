@@ -1,5 +1,9 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { CreateRoomDto, UserJoinRoomDto } from '../rooms/dto/rooms.dto';
+import {
+  CreateRoomDto,
+  UserAnswerQuestionDto,
+  UserJoinRoomDto,
+} from '../rooms/dto/rooms.dto';
 import { Rooms } from 'src/entities/Rooms';
 import { IsNull, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -118,6 +122,8 @@ export class RoomsService {
         HttpStatus.BAD_REQUEST,
       );
   }
+
+  async answerQuestion(dto: UserAnswerQuestionDto, userId: string) {}
 
   // findAll() {}
 

@@ -31,6 +31,12 @@ export class Questions {
   })
   sortOrder: number | null;
 
+  @Column('bigint', {
+    name: 'timer',
+    nullable: true,
+  })
+  timer: number | null;
+
   @Column('text', {
     name: 'media_url',
     nullable: true,

@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsString,
@@ -10,10 +11,19 @@ import {
 } from 'class-validator';
 import { MIN_OPTIONS, MIN_QUESTIONS } from '../quizzes.constant';
 import { PageOptionsDto } from 'src/shared/pagination/pagination.dto';
+import { TimersEnum } from 'src/shared/timers.enum';
 
 export class QuizFilter extends OmitType(PageOptionsDto, ['order'] as const) {
   @ApiProperty({ required: false })
   userId: string | null;
+}
+
+export class QuestionFilter extends OmitType(PageOptionsDto, [
+  'order',
+] as const) {
+  @ApiProperty({ required: false })
+  @IsNotEmpty()
+  quizId: string | null;
 }
 
 export class CreateOptionDto {
@@ -36,6 +46,11 @@ export class CreateQuestionDto {
   @IsNotEmpty()
   @IsNumber()
   sortOrder: number | null;
+
+  @ApiProperty({ required: true, enum: TimersEnum })
+  @IsNotEmpty()
+  @IsEnum(TimersEnum)
+  timer: TimersEnum | null;
 
   @ApiProperty({ required: false })
   mediaUrl: string | null;

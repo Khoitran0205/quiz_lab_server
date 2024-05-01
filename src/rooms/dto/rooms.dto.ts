@@ -13,3 +13,9 @@ export class UserJoinRoomDto {
   @IsString({ message: 'Room code must be in type string' })
   roomCode: string | null;
 }
+
+export class UserAnswerQuestionDto {
+  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  optionId: string | null;
+}
