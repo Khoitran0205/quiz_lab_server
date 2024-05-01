@@ -71,7 +71,7 @@ export class RoomsController {
   }
 
   @ApiOperation({ summary: 'Update rank of a room' })
-  @Patch('end-room/:id')
+  @Patch('update-user-rank/:id')
   async updateRankOfARoom(@Req() req, @Param('id') id: string) {
     // const { id: updatedBy } = req?.user;
     const data = await this.roomsService.updateRankOfARoom(id);
