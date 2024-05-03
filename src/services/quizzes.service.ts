@@ -303,7 +303,8 @@ export class QuizzesService {
     await entityManager.delete(Options, { questionId: In(listQuestionId) });
     await entityManager.delete(Questions, { quizId });
 
-    await this.cloudinaryService.deletePicture(prepareDeletedUrl);
+    if (prepareDeletedUrl?.length > 0)
+      await this.cloudinaryService.deletePicture(prepareDeletedUrl);
   }
 
   async remove(id: string, deletedBy: string) {
