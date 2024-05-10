@@ -9,6 +9,7 @@ import {
   CreateQuizDto,
   QuestionFilter,
   QuizFilter,
+  UpdateQuestionDto,
   UpdateQuizDto,
 } from 'src/quizzes/dto/quizzes.dto';
 import {
@@ -185,9 +186,8 @@ export class QuizzesService {
 
   async update(id: string, dto: UpdateQuizDto, updatedBy: string) {
     try {
-      const existedQuiz = await this.validateExistedQuiz(id, updatedBy);
-      const { coverPicture: existedCoverPicture, questions: existedQuestions } =
-        existedQuiz;
+      const existedQuiz = await this.validateExistedQuiz(id, updatedBy, false);
+      const { coverPicture: existedCoverPicture } = existedQuiz;
 
       const updatedQuiz = await this.dataSource.transaction(
         async (entityManager) => {
@@ -197,6 +197,8 @@ export class QuizzesService {
             coverPicture,
             isDeleteCoverPicture,
             questions,
+            updatedQuestions,
+            deletedQuestionIds,
           } = dto;
 
           if (
@@ -224,13 +226,13 @@ export class QuizzesService {
             updatedBy,
           });
 
-          if (questions)
-            await this.updateQuestionsAndOptionsForQuiz(
-              entityManager,
-              id,
-              questions,
-              existedQuestions,
-            );
+          await this.updateQuestionsAndOptionsForQuiz(
+            entityManager,
+            id,
+            questions,
+            updatedQuestions,
+            deletedQuestionIds,
+          );
 
           return updatedQuiz;
         },
@@ -245,13 +247,17 @@ export class QuizzesService {
     }
   }
 
-  async validateExistedQuiz(quizId: string, userId: string) {
+  async validateExistedQuiz(
+    quizId: string,
+    userId: string,
+    isGettingQuestions: boolean,
+  ) {
     const existedQuiz = await this.quizzesRepository.findOne({
       where: {
         id: quizId,
         deletedAt: IsNull(),
       },
-      relations: ['questions'],
+      relations: isGettingQuestions?.toString() === 'true' ? ['questions'] : [],
     });
 
     if (!existedQuiz)
@@ -268,40 +274,113 @@ export class QuizzesService {
     entityManager: EntityManager,
     quizId: string,
     questions: CreateQuestionDto[],
-    existedQuestions: Questions[],
+    updatedQuestions: UpdateQuestionDto[],
+    deletedQuestionIds: string[],
   ) {
-    await this.deleteQuestionsAndOptionsByQuizId(
-      entityManager,
-      quizId,
-      existedQuestions,
-    );
+    if (deletedQuestionIds?.length > 0)
+      await this.deleteQuestionsAndOptionsByQuestionIds(
+        entityManager,
+        deletedQuestionIds,
+      );
 
-    await this.createQuestionsAndOptionsForQuiz(
-      entityManager,
-      quizId,
-      questions,
-    );
+    if (questions?.length > 0)
+      await this.createQuestionsAndOptionsForQuiz(
+        entityManager,
+        quizId,
+        questions,
+      );
+
+    if (updatedQuestions?.length > 0)
+      await this.updateExistedQuestionsAndOptions(
+        entityManager,
+        updatedQuestions,
+      );
   }
 
-  async deleteQuestionsAndOptionsByQuizId(
+  async updateExistedQuestionsAndOptions(
     entityManager: EntityManager,
-    quizId: string,
-    existedQuestions: Questions[],
+    updatedQuestions: UpdateQuestionDto[],
   ) {
+    const preparedUpdatedQuestions = [];
     const prepareDeletedUrl = [];
-    const listQuestionId = [];
+
+    for (let i = 0; i < updatedQuestions?.length; i++) {
+      const updatedQuestion = updatedQuestions[i];
+      const { id, options, mediaUrl, explanationMediaUrl } = updatedQuestion;
+      const existedQuestion = await entityManager.findOne(Questions, {
+        where: {
+          id,
+        },
+      });
+
+      if (!existedQuestion)
+        throw new HttpException('question not found', HttpStatus.BAD_REQUEST);
+
+      const {
+        mediaUrl: existedMediaUrl,
+        explanationMediaUrl: existedExplanationMediaUrl,
+      } = existedQuestion;
+
+      const newMediaUrl = mediaUrl
+        ? (await this.cloudinaryService.uploadQuestionMedia(mediaUrl))?.url
+        : null;
+
+      const newExplanationMediaUrl = explanationMediaUrl
+        ? (
+            await this.cloudinaryService.uploadExplanationMedia(
+              explanationMediaUrl,
+            )
+          )?.url
+        : null;
+
+      if (newMediaUrl) {
+        if (existedMediaUrl) prepareDeletedUrl.push(existedMediaUrl);
+      }
+
+      if (newExplanationMediaUrl) {
+        if (existedExplanationMediaUrl)
+          prepareDeletedUrl.push(existedExplanationMediaUrl);
+      }
+
+      preparedUpdatedQuestions.push({
+        ...updatedQuestion,
+        ...(mediaUrl ? { mediaUrl: newMediaUrl } : {}),
+        ...(explanationMediaUrl
+          ? { explanationMediaUrl: newExplanationMediaUrl }
+          : {}),
+      });
+
+      if (options) {
+        await this.validateOptions(options);
+        await entityManager.delete(Options, { questionId: id });
+        await entityManager.insert(Options, options);
+      }
+    }
+    await entityManager.save(Questions, preparedUpdatedQuestions);
+    await this.cloudinaryService.deletePicture(prepareDeletedUrl);
+  }
+
+  async deleteQuestionsAndOptionsByQuestionIds(
+    entityManager: EntityManager,
+    deletedQuestionIds: string[],
+  ) {
+    const existedQuestions = await this.questionsRepository.find({
+      where: {
+        id: In(deletedQuestionIds),
+      },
+    });
+
+    const prepareDeletedUrl = [];
     for (let i = 0; i < existedQuestions?.length; i++) {
       const question = existedQuestions[i];
-      const { id, mediaUrl, explanationMediaUrl } = question;
+      const { mediaUrl, explanationMediaUrl } = question;
       if (mediaUrl) prepareDeletedUrl.push(mediaUrl);
 
       if (explanationMediaUrl) prepareDeletedUrl.push(explanationMediaUrl);
-
-      listQuestionId.push(id);
     }
 
-    await entityManager.delete(Options, { questionId: In(listQuestionId) });
-    await entityManager.delete(Questions, { quizId });
+    await entityManager.delete(Options, { questionId: In(deletedQuestionIds) });
+    await entityManager.delete(Questions, { id: In(deletedQuestionIds) });
 
     if (prepareDeletedUrl?.length > 0)
       await this.cloudinaryService.deletePicture(prepareDeletedUrl);
@@ -309,12 +388,28 @@ export class QuizzesService {
 
   async remove(id: string, deletedBy: string) {
     try {
-      const existedQuiz = await this.validateExistedQuiz(id, deletedBy);
-      return await this.quizzesRepository.save({
+      const existedQuiz = await this.validateExistedQuiz(id, deletedBy, true);
+      const { coverPicture, questions } = existedQuiz;
+
+      const preparedDeletedUrl = [];
+      if (coverPicture) preparedDeletedUrl.push(coverPicture);
+      questions?.map((question) => {
+        const { mediaUrl, explanationMediaUrl } = question;
+
+        if (mediaUrl) preparedDeletedUrl.push(mediaUrl);
+        if (explanationMediaUrl) preparedDeletedUrl.push(explanationMediaUrl);
+      });
+
+      const deletedQuiz = await this.quizzesRepository.save({
         ...existedQuiz,
         deletedAt: moment().format(),
         deletedBy,
       });
+
+      if (preparedDeletedUrl?.length > 0)
+        await this.cloudinaryService.deletePicture(preparedDeletedUrl);
+
+      return deletedQuiz;
     } catch (error) {
       throw new HttpException(
         `Failed to delete quiz - ${error}`,

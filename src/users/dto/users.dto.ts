@@ -20,6 +20,9 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   phoneNumber: string | null;
 
+  @ApiProperty({ required: false })
+  profilePicture: string | null;
+
   @ApiProperty({ required: false, format: 'YYYY-MM-DD' })
   @Transform(({ value }) => new Date(value))
   dateOfBirth: Date | null;

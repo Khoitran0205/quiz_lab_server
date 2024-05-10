@@ -42,7 +42,7 @@ export class RoomsService {
 
   async create(dto: CreateRoomDto, createdBy: string) {
     const { quizId } = dto;
-    await this.quizzesService.validateExistedQuiz(quizId, createdBy);
+    await this.quizzesService.validateExistedQuiz(quizId, createdBy, false);
 
     const code = await this.createConversationCode();
 

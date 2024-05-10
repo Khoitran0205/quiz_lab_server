@@ -12,6 +12,17 @@ export class CloudinaryService {
     });
   }
 
+  async uploadProfilePicture(base64: string) {
+    try {
+      return await cloudinary.uploader.upload(base64, {
+        resource_type: 'image',
+        upload_preset: 'avatar_setups',
+      });
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.BAD_REQUEST);
+    }
+  }
+
   async uploadQuizCoverPicture(base64: string) {
     try {
       return await cloudinary.uploader.upload(base64, {

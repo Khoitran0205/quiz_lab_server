@@ -5,11 +5,13 @@ import * as moment from 'moment';
 import { Users } from 'src/entities/Users';
 import { ChangePasswordDto, UpdateUserDto } from 'src/users/dto/users.dto';
 import * as bcrypt from 'bcrypt';
+import { CloudinaryService } from 'src/utils/cloudinary';
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(Users)
     private usersRepository: Repository<Users>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async findOne(id: string) {
@@ -27,9 +29,17 @@ export class UsersService {
 
   async update(id: string, dto: UpdateUserDto) {
     const existedUser = await this.findOne(id);
+
+    const { profilePicture } = dto;
+
+    const newProfilePicture = profilePicture
+      ? (await this.cloudinaryService.uploadProfilePicture(profilePicture))?.url
+      : null;
+
     await this.usersRepository.save({
       ...existedUser,
       ...dto,
+      ...(profilePicture ? { profilePicture: newProfilePicture } : {}),
       updatedAt: moment().format(),
       updatedBy: id,
     });

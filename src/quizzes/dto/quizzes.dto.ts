@@ -89,10 +89,26 @@ export class CreateQuizDto {
   questions: CreateQuestionDto[];
 }
 
+export class UpdateQuestionDto extends PartialType(CreateQuestionDto) {
+  @ApiProperty({ required: true })
+  @IsNotEmpty({ message: 'id must be provided when update questions' })
+  @IsString()
+  id: string | null;
+}
+
 export class UpdateQuizDto extends PartialType(CreateQuizDto) {
   @ApiProperty({ required: false })
   title: string | null;
 
+  @ApiProperty({ required: false })
+  deletedQuestionIds: string[] | null;
+
   @ApiProperty({ required: false, default: false })
   isDeleteCoverPicture: boolean | null;
+
+  @ApiProperty({ required: true, type: [UpdateQuestionDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateQuestionDto)
+  updatedQuestions: UpdateQuestionDto[];
 }
