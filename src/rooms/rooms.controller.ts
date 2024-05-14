@@ -49,7 +49,7 @@ export class RoomsController {
   }
 
   @ApiOperation({ summary: 'User joins room' })
-  @Post()
+  @Post('join-room')
   async joinRoom(@Req() req, @Body() dto: UserJoinRoomDto) {
     const { id: userId } = req?.user;
     const data = await this.roomsService.joinRoom(dto, userId);

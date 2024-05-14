@@ -1,6 +1,8 @@
+import { HttpException, HttpStatus, Req } from '@nestjs/common';
 import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { RoomsService } from 'src/services/rooms.service';
+import { UsersService } from 'src/services/users.service';
 
 @WebSocketGateway({
   cors: {
@@ -10,45 +12,149 @@ import { RoomsService } from 'src/services/rooms.service';
   },
   transports: ['websocket'],
 })
-export class ChatsGateway {
-  listSocketUser: any[];
+export class RoomsGateway {
+  listActiveRoom: any[];
 
-  constructor(private readonly roomsService: RoomsService) {
-    this.listSocketUser = [];
+  constructor(
+    private readonly roomsService: RoomsService,
+    private readonly usersService: UsersService,
+  ) {
+    this.listActiveRoom = [];
+  }
+
+  async findAndValidateRoomByCode(roomCode: string) {
+    const existedRoom = await this.roomsService.findRoomByCode(roomCode);
+    if (!existedRoom)
+      throw new HttpException('room not found', HttpStatus.BAD_REQUEST);
+
+    return existedRoom;
+  }
+
+  async getHostByRoomCode(roomCode: string) {
+    const existedRoom = await this.findAndValidateRoomByCode(roomCode);
+
+    const { id: roomId } = existedRoom;
+    let hostUser = null;
+    this.listActiveRoom?.map((activeRoom) => {
+      activeRoom?.map((userInRoom) => {
+        const { hostOfRoomId } = userInRoom;
+        if (hostOfRoomId?.toString() === roomId?.toString())
+          hostUser = userInRoom;
+      });
+    });
+
+    return {
+      hostUser,
+      room: existedRoom,
+    };
   }
 
   //   async onModuleInit() {}
 
   async handleConnection(socket: Socket, ...args: any[]) {
-    console.log('connected');
+    console.log('new-connection');
   }
 
   @SubscribeMessage('userConnected')
-  async handleUserConnected(socket: Socket, data: any) {
+  async handleUserConnected(
+    socket: Socket,
+    data: { userId: string; roomCode: string },
+  ) {
     const { userId, roomCode } = data;
     if (userId) {
-      this.listSocketUser?.push({
-        socketId: socket?.id,
-        userId,
-      });
+      const { room: existedRoom, hostUser } = await this.getHostByRoomCode(
+        roomCode,
+      );
 
-      const existedRoom = await this.roomsService.findRoomByCode(roomCode);
-      if (existedRoom) socket?.join(roomCode);
+      socket?.join(roomCode);
 
-      console.log(this.listSocketUser);
+      if (hostUser) {
+        const { socketId } = hostUser;
+        const existedUser = await this.usersService.findOne(userId);
+        socket.to(socketId).emit('newUserConnected', { user: existedUser });
+      }
+
+      const { id, createdBy } = existedRoom;
+
+      if (userId?.toString() === createdBy?.toString()) {
+        this.listActiveRoom?.push([
+          {
+            socketId: socket?.id,
+            userId,
+            hostOfRoomId: id,
+          },
+        ]);
+      } else {
+        this.listActiveRoom?.map((activeRoom) => {
+          const roomHost = activeRoom[0];
+          const { hostOfRoomId } = roomHost;
+          if (hostOfRoomId === id)
+            activeRoom?.push({
+              socketId: socket?.id,
+              userId,
+            });
+        });
+      }
+
+      console.log(this.listActiveRoom);
     }
   }
 
-  @SubscribeMessage('sendMessage')
-  async handleMessage(socket: Socket, data: any) {
-    const { conversationCode, message } = data;
-    socket.broadcast.to(conversationCode).emit('newMessage', message);
+  @SubscribeMessage('startQuiz')
+  async handleStartQuiz(socket: Socket, data: any) {
+    const { roomCode } = data;
+    await this.findAndValidateRoomByCode(roomCode);
+
+    socket.broadcast.to(roomCode).emit('startQuiz');
+  }
+
+  @SubscribeMessage('startQuestion')
+  async handleStartQuestion(socket: Socket, data: any) {
+    const { roomCode } = data;
+    await this.findAndValidateRoomByCode(roomCode);
+
+    socket.broadcast.to(roomCode).emit('startQuestion');
+  }
+
+  @SubscribeMessage('answerQuestion')
+  async handleAnswerQuestion(socket: Socket, data: any) {
+    const { roomCode } = data;
+    const { hostUser } = await this.getHostByRoomCode(roomCode);
+
+    if (hostUser) {
+      const { socketId } = hostUser;
+      socket.to(socketId).emit('newUserAnswer');
+    }
+  }
+
+  @SubscribeMessage('endQuestion')
+  async handleEndQuestion(socket: Socket, data: any) {
+    const { roomCode } = data;
+    await this.findAndValidateRoomByCode(roomCode);
+
+    socket.broadcast.to(roomCode).emit('endQuestion');
+  }
+
+  @SubscribeMessage('endQuiz')
+  async handleEndQuiz(socket: Socket, data: any) {
+    const { roomCode } = data;
+    await this.findAndValidateRoomByCode(roomCode);
+
+    socket.broadcast.to(roomCode).emit('endQuiz');
   }
 
   async handleDisconnect(socket: Socket) {
-    this.listSocketUser = this.listSocketUser?.filter(
-      (socketUser) => socketUser?.socketId !== socket?.id,
-    );
-    console.log(this.listSocketUser);
+    for (let i = 0; i < this.listActiveRoom?.length; i++) {
+      this.listActiveRoom[i] = this.listActiveRoom[i]?.filter((userInRoom) => {
+        const { socketId } = userInRoom;
+        return socketId !== socket?.id;
+      });
+
+      if (this.listActiveRoom[i]?.length === 0) {
+        this.listActiveRoom?.splice(i, 1);
+      }
+    }
+
+    console.log(this.listActiveRoom);
   }
 }

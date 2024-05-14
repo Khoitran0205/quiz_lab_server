@@ -10,6 +10,9 @@ import { Questions } from 'src/entities/Questions';
 import { Options } from 'src/entities/Options';
 import { CloudinaryService } from 'src/utils/cloudinary';
 import { UserAnswers } from 'src/entities/UserAnswers';
+import { RoomsGateway } from './rooms.gateway';
+import { UsersService } from 'src/services/users.service';
+import { Users } from 'src/entities/Users';
 
 @Module({
   imports: [
@@ -20,9 +23,16 @@ import { UserAnswers } from 'src/entities/UserAnswers';
       Quizzes,
       Questions,
       Options,
+      Users,
     ]),
   ],
   controllers: [RoomsController],
-  providers: [RoomsService, QuizzesService, CloudinaryService],
+  providers: [
+    RoomsService,
+    UsersService,
+    QuizzesService,
+    CloudinaryService,
+    RoomsGateway,
+  ],
 })
 export class RoomsModule {}
