@@ -102,10 +102,10 @@ export class RoomsGateway {
 
   @SubscribeMessage('startQuiz')
   async handleStartQuiz(socket: Socket, data: any) {
-    const { roomCode } = data;
+    const { roomCode, totalQuestion } = data;
     await this.findAndValidateRoomByCode(roomCode);
 
-    socket.broadcast.to(roomCode).emit('startQuiz');
+    socket.broadcast.to(roomCode).emit('startQuiz', { totalQuestion });
   }
 
   @SubscribeMessage('startQuestion')

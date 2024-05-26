@@ -125,7 +125,7 @@ export class UsersService {
       .orderBy('room.createdAt', 'DESC')
       .take(take)
       .skip(getSkip({ page, take }))
-      .getRawMany();
+      .getManyAndCount();
 
     return new PaginationDto(playingHistories, <PageMetaDto>{
       page,
