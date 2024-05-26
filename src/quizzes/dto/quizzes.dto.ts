@@ -20,11 +20,7 @@ export class QuizFilter extends OmitType(PageOptionsDto, ['order'] as const) {
 
 export class QuestionFilter extends OmitType(PageOptionsDto, [
   'order',
-] as const) {
-  @ApiProperty({ required: false })
-  @IsNotEmpty()
-  quizId: string | null;
-}
+] as const) {}
 
 export class CreateOptionDto {
   @ApiProperty({ required: true })
@@ -45,7 +41,7 @@ export class CreateQuestionDto {
   @ApiProperty({ required: true })
   @IsNotEmpty()
   @IsNumber()
-  sortOrder: number | null;
+  sortOrder: string | null;
 
   @ApiProperty({ required: true, enum: TimersEnum })
   @IsNotEmpty()

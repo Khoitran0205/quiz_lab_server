@@ -258,8 +258,8 @@ export class RoomsService {
     return {};
   }
 
-  async getUsers(dto: UserRoomFilter) {
-    const { page, take, roomId } = dto;
+  async getUsers(roomId: string, dto: UserRoomFilter) {
+    const { page, take } = dto;
     const [userRooms, count] = await this.userRoomsRepository
       .createQueryBuilder('uR')
       .leftJoinAndSelect('uR.user', 'user')

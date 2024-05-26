@@ -4,11 +4,7 @@ import { PageOptionsDto } from 'src/shared/pagination/pagination.dto';
 
 export class UserRoomFilter extends OmitType(PageOptionsDto, [
   'order',
-] as const) {
-  @ApiProperty({ required: false })
-  @IsNotEmpty()
-  roomId: string | null;
-}
+] as const) {}
 
 export class CreateRoomDto {
   @ApiProperty({ required: true })

@@ -418,8 +418,8 @@ export class QuizzesService {
     }
   }
 
-  async findQuestionsByQuizId(dto: QuestionFilter) {
-    const { page, take, quizId } = dto;
+  async findQuestionsByQuizId(quizId: string, dto: QuestionFilter) {
+    const { page, take } = dto;
     const [questions, count] = await this.questionsRepository
       .createQueryBuilder('q')
       .leftJoinAndSelect('q.options', 'options')

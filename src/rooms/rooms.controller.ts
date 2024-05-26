@@ -39,9 +39,12 @@ export class RoomsController {
   }
 
   @ApiOperation({ summary: 'Get users of a room' })
-  @Get('get-users/:id')
-  async getUsers(@Query() dto: UserRoomFilter) {
-    const data = await this.roomsService.getUsers(dto);
+  @Get('get-users/:roomId')
+  async getUsers(
+    @Param('roomId') roomId: string,
+    @Query() dto: UserRoomFilter,
+  ) {
+    const data = await this.roomsService.getUsers(roomId, dto);
     return {
       message: 'get successfully',
       data,

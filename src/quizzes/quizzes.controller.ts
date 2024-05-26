@@ -59,6 +59,21 @@ export class QuizzesController {
     };
   }
 
+  @ApiOperation({ summary: 'Get questions by quiz id' })
+  @Get('get-questions/:quizId')
+  async findQuestionsByQuizId(
+    @Param('quizId') quizId: string,
+    @Query() dto: QuestionFilter,
+  ) {
+    console.log('haha');
+
+    const data = await this.quizzesService.findQuestionsByQuizId(quizId, dto);
+    return {
+      message: 'get successfully',
+      data,
+    };
+  }
+
   @ApiOperation({ summary: 'Update quiz by id' })
   @Patch(':id')
   async update(
@@ -81,16 +96,6 @@ export class QuizzesController {
     const data = await this.quizzesService.remove(id, deletedBy);
     return {
       message: 'delete successfully',
-      data,
-    };
-  }
-
-  @ApiOperation({ summary: 'Get questions by quiz id' })
-  @Get('get-questions')
-  async findQuestionsByQuizId(@Query() dto: QuestionFilter) {
-    const data = await this.quizzesService.findQuestionsByQuizId(dto);
-    return {
-      message: 'get successfully',
       data,
     };
   }

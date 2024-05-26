@@ -30,7 +30,7 @@ export class Questions {
     name: 'sort_order',
     nullable: true,
   })
-  sortOrder: number | null;
+  sortOrder: string | null;
 
   @Column('bigint', {
     name: 'timer',
