@@ -54,3 +54,19 @@ export class UserHistoryDto extends OmitType(PageOptionsDto, [
   @IsNotEmpty()
   historyType: HistoriesEnum | null;
 }
+
+export class PlayingHistoryDto {
+  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  @IsString()
+  userRoomId: string | null;
+}
+
+export class OrganizingHistoryDto extends OmitType(PageOptionsDto, [
+  'order',
+] as const) {
+  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  @IsString()
+  roomId: string | null;
+}

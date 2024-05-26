@@ -13,6 +13,8 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { UsersService } from 'src/services/users.service';
 import {
   ChangePasswordDto,
+  OrganizingHistoryDto,
+  PlayingHistoryDto,
   UpdateUserDto,
   UserHistoryDto,
 } from './dto/users.dto';
@@ -61,8 +63,34 @@ export class UsersController {
 
   @ApiOperation({ summary: 'Get my histories' })
   @Get('my-history')
-  async findMyHistory(@Req() req, @Query() dto: UserHistoryDto) {
+  async getMyHistory(@Req() req, @Query() dto: UserHistoryDto) {
     const { id: userId } = req?.user;
-    return await this.usersService.getMyHistory(userId, dto);
+    const data = await this.usersService.getMyHistory(dto, userId);
+    return {
+      message: 'get successfully',
+      data,
+    };
+  }
+
+  @ApiOperation({ summary: 'Get playing history by user-room id' })
+  @Get('my-playing-history')
+  async getPlayingHistory(@Req() req, @Query() dto: PlayingHistoryDto) {
+    const { id: userId } = req?.user;
+    const data = await this.usersService.getPlayingHistory(dto, userId);
+    return {
+      message: 'get successfully',
+      data,
+    };
+  }
+
+  @ApiOperation({ summary: 'Get organizing history by room id' })
+  @Get('my-organizing-history')
+  async getOrganizingHistory(@Req() req, @Query() dto: OrganizingHistoryDto) {
+    const { id: userId } = req?.user;
+    const data = await this.usersService.getOrganizingHistory(dto, userId);
+    return {
+      message: 'get successfully',
+      data,
+    };
   }
 }

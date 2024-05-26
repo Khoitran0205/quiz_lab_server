@@ -5,6 +5,8 @@ import * as moment from 'moment';
 import { Users } from 'src/entities/Users';
 import {
   ChangePasswordDto,
+  OrganizingHistoryDto,
+  PlayingHistoryDto,
   UpdateUserDto,
   UserHistoryDto,
 } from 'src/users/dto/users.dto';
@@ -17,13 +19,22 @@ import {
   PaginationDto,
   getSkip,
 } from 'src/shared/pagination/pagination.dto';
+import { Rooms } from 'src/entities/Rooms';
+import { Questions } from 'src/entities/Questions';
+import { UserAnswers } from 'src/entities/UserAnswers';
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(Users)
     private usersRepository: Repository<Users>,
+    @InjectRepository(Rooms)
+    private roomsRepository: Repository<Rooms>,
     @InjectRepository(UserRooms)
     private userRoomsRepository: Repository<UserRooms>,
+    @InjectRepository(Questions)
+    private questionsRepository: Repository<Questions>,
+    @InjectRepository(UserAnswers)
+    private userAnswersRepository: Repository<UserAnswers>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -91,7 +102,7 @@ export class UsersService {
     );
   }
 
-  async getMyHistory(userId: string, dto: UserHistoryDto) {
+  async getMyHistory(dto: UserHistoryDto, userId: string) {
     const { page, take, historyType } = dto;
     switch (historyType) {
       case HistoriesEnum.PLAYING:
@@ -115,13 +126,6 @@ export class UsersService {
           ...(userId ? { userId } : {}),
         },
       )
-      .addSelect(
-        `
-        (SELECT COUNT(*) FROM user_rooms uR2
-        WHERE uR2.room_id = uR.id)
-      `,
-        'totalPlayer',
-      )
       .orderBy('room.createdAt', 'DESC')
       .take(take)
       .skip(getSkip({ page, take }))
@@ -135,25 +139,114 @@ export class UsersService {
   }
 
   async getUserOrganizingHistory(userId: string, page: number, take: number) {
-    const [playingHistories, count] = await this.userRoomsRepository
-      .createQueryBuilder('uR')
-      .leftJoinAndSelect('uR.room', 'room')
-      .leftJoinAndSelect('room.quiz', 'quiz')
+    const [organizingHistories, count] = await this.roomsRepository
+      .createQueryBuilder('r')
+      .leftJoinAndSelect('r.quiz', 'quiz')
       .where(
         `
-        quiz.deleted is null
-        ${userId ? ' and uR.userId = :userId' : ''}
+        r.deletedAt is null and quiz.deletedAt is null
+        ${userId ? ' and r.createdBy = :userId' : ''}
         `,
         {
           ...(userId ? { userId } : {}),
         },
       )
-      .orderBy('room.createdAt', 'DESC')
+      .orderBy('r.createdAt', 'DESC')
       .take(take)
       .skip(getSkip({ page, take }))
       .getManyAndCount();
 
-    return new PaginationDto(playingHistories, <PageMetaDto>{
+    return new PaginationDto(organizingHistories, <PageMetaDto>{
+      page,
+      take,
+      totalCount: count,
+    });
+  }
+
+  async getPlayingHistory(dto: PlayingHistoryDto, userId: string) {
+    const { userRoomId } = dto;
+    const existedUserRoom = await this.userRoomsRepository
+      .createQueryBuilder('uR')
+      .leftJoinAndSelect('uR.room', 'room')
+      .leftJoinAndSelect('room.quiz', 'quiz')
+      .where('room.deletedAt is null and uR.id = :userRoomId', {
+        userRoomId,
+      })
+      .getOne();
+
+    const { userId: userRoomUserId, roomId, room } = existedUserRoom;
+    const { quizId } = room;
+
+    if (!existedUserRoom)
+      throw new HttpException(
+        'Playing history not found',
+        HttpStatus.BAD_REQUEST,
+      );
+
+    if (userId !== userRoomUserId)
+      throw new HttpException(
+        'You are not authorized to view this history',
+        HttpStatus.BAD_REQUEST,
+      );
+
+    const totalPLayer = await this.userRoomsRepository
+      .createQueryBuilder('uR')
+      .leftJoin('uR.user', 'user')
+      .leftJoin('uR.room', 'room')
+      .where(
+        'user.deletedAt is null and room.deletedAt is null and room.id = :roomId',
+        {
+          roomId,
+        },
+      )
+      .getCount();
+
+    const totalQuestion = await this.questionsRepository
+      .createQueryBuilder('q')
+      .leftJoin('q.quiz', 'quiz')
+      .where('quiz.deletedAt is null and q.quizId = :quizId', {
+        quizId,
+      })
+      .getCount();
+
+    const totalCorrectAnswer = await this.userAnswersRepository
+      .createQueryBuilder('uA')
+      .leftJoin('uA.question', 'question')
+      .leftJoin('question.quiz', 'quiz')
+      .where('quiz.deletedAt is null and uA.score > 0 and quiz.id = :quizId', {
+        quizId,
+      })
+      .getCount();
+
+    return {
+      userRoom: existedUserRoom,
+      totalPLayer,
+      totalQuestion,
+      totalCorrectAnswer,
+    };
+  }
+
+  async getOrganizingHistory(dto: OrganizingHistoryDto, userId: string) {
+    const { page, take, roomId } = dto;
+    const [userRooms, count] = await this.userRoomsRepository
+      .createQueryBuilder('uR')
+      .leftJoinAndSelect('uR.user', 'user')
+      .leftJoin('uR.room', 'room')
+      .where(
+        `
+        room.deletedAt is null
+        ${roomId ? ' and room.id = :roomId' : ''}
+        `,
+        {
+          ...(roomId ? { roomId } : {}),
+        },
+      )
+      .orderBy('uR.rank', 'ASC')
+      .take(take)
+      .skip(getSkip({ page, take }))
+      .getManyAndCount();
+
+    return new PaginationDto(userRooms, <PageMetaDto>{
       page,
       take,
       totalCount: count,
