@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Req } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { RoomsService } from 'src/services/rooms.service';
@@ -51,7 +51,7 @@ export class RoomsGateway {
 
   //   async onModuleInit() {}
 
-  async handleConnection(socket: Socket, ...args: any[]) {
+  async handleConnection() {
     console.log('new-connection');
   }
 

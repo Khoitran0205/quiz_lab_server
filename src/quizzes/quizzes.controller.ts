@@ -86,7 +86,7 @@ export class QuizzesController {
   }
 
   @ApiOperation({ summary: 'Get questions by quiz id' })
-  @Get('get-questions/:id')
+  @Get('get-questions')
   async findQuestionsByQuizId(@Query() dto: QuestionFilter) {
     const data = await this.quizzesService.findQuestionsByQuizId(dto);
     return {
