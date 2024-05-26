@@ -105,17 +105,15 @@ export class RoomsGateway {
     const { roomCode } = data;
     await this.findAndValidateRoomByCode(roomCode);
 
-    console.log('start quiz');
-
     socket.broadcast.to(roomCode).emit('startQuiz');
   }
 
   @SubscribeMessage('startQuestion')
   async handleStartQuestion(socket: Socket, data: any) {
-    const { roomCode } = data;
+    const { roomCode, questionId } = data;
     await this.findAndValidateRoomByCode(roomCode);
 
-    socket.broadcast.to(roomCode).emit('startQuestion');
+    socket.broadcast.to(roomCode).emit('startQuestion', { questionId });
   }
 
   @SubscribeMessage('answerQuestion')
