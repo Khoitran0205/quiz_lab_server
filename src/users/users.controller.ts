@@ -4,13 +4,18 @@ import {
   Get,
   Param,
   Patch,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { UsersService } from 'src/services/users.service';
-import { ChangePasswordDto, UpdateUserDto } from './dto/users.dto';
+import {
+  ChangePasswordDto,
+  UpdateUserDto,
+  UserHistoryDto,
+} from './dto/users.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -52,5 +57,12 @@ export class UsersController {
       message: 'change password successfully',
       data,
     };
+  }
+
+  @ApiOperation({ summary: 'Get my histories' })
+  @Get('my-history')
+  async findMyHistory(@Req() req, @Query() dto: UserHistoryDto) {
+    const { id: userId } = req?.user;
+    return await this.usersService.getMyHistory(userId, dto);
   }
 }

@@ -105,6 +105,8 @@ export class RoomsGateway {
     const { roomCode } = data;
     await this.findAndValidateRoomByCode(roomCode);
 
+    console.log('start quiz');
+
     socket.broadcast.to(roomCode).emit('startQuiz');
   }
 

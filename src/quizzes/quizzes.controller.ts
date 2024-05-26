@@ -65,8 +65,6 @@ export class QuizzesController {
     @Param('quizId') quizId: string,
     @Query() dto: QuestionFilter,
   ) {
-    console.log('haha');
-
     const data = await this.quizzesService.findQuestionsByQuizId(quizId, dto);
     return {
       message: 'get successfully',

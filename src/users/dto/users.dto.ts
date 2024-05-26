@@ -1,8 +1,9 @@
 import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { PASSWORD_MIN_LENGTH } from 'src/auth/auth.constant';
 import { GendersEnum } from 'src/shared/genders.enum';
+import { HistoriesEnum } from 'src/shared/histories.enum';
 import { PageOptionsDto } from 'src/shared/pagination/pagination.dto';
 
 export class UserFilter extends OmitType(PageOptionsDto, ['order'] as const) {}
@@ -39,4 +40,17 @@ export class ChangePasswordDto {
   @IsString()
   @MinLength(PASSWORD_MIN_LENGTH)
   newPassword: string | null;
+}
+
+export class UserHistoryDto extends OmitType(PageOptionsDto, [
+  'order',
+] as const) {
+  @ApiProperty({
+    required: true,
+    enum: HistoriesEnum,
+    default: HistoriesEnum.PLAYING,
+  })
+  @IsEnum(HistoriesEnum)
+  @IsNotEmpty()
+  historyType: HistoriesEnum | null;
 }
