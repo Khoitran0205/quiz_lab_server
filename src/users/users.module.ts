@@ -8,12 +8,24 @@ import { UserRooms } from 'src/entities/UserRooms';
 import { Rooms } from 'src/entities/Rooms';
 import { Questions } from 'src/entities/Questions';
 import { UserAnswers } from 'src/entities/UserAnswers';
+import { RoomsService } from 'src/services/rooms.service';
+import { QuizzesService } from 'src/services/quizzes.service';
+import { Quizzes } from 'src/entities/Quizzes';
+import { Options } from 'src/entities/Options';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Users, UserRooms, Rooms, Questions, UserAnswers]),
+    TypeOrmModule.forFeature([
+      Users,
+      UserRooms,
+      Rooms,
+      Questions,
+      UserAnswers,
+      Quizzes,
+      Options,
+    ]),
   ],
   controllers: [UsersController],
-  providers: [UsersService, CloudinaryService],
+  providers: [UsersService, RoomsService, QuizzesService, CloudinaryService],
 })
 export class UsersModule {}

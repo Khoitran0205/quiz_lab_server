@@ -12,6 +12,7 @@ import { QuizzesService } from './quizzes.service';
 import { generateRoomCode } from 'src/shared/utils';
 import {
   DEFAULT_RANK,
+  DEFAULT_TOTAL_CORRECT_ANSWER,
   DEFAULT_TOTAL_SCORE,
   ROOM_CODE_LENGTH,
 } from 'src/rooms/rooms.constant';
@@ -122,6 +123,7 @@ export class RoomsService {
         userId,
         roomId,
         totalScore: DEFAULT_TOTAL_SCORE,
+        totalCorrectAnswer: DEFAULT_TOTAL_CORRECT_ANSWER,
         rank: DEFAULT_RANK,
       }),
     );
@@ -148,7 +150,7 @@ export class RoomsService {
         HttpStatus.BAD_REQUEST,
       );
 
-    const { id: userRoomId, totalScore } = existedUserRoom;
+    const { id: userRoomId, totalScore, totalCorrectAnswer } = existedUserRoom;
 
     const { question, option } = await this.validateQuestionAndOption(
       questionId,
@@ -179,6 +181,10 @@ export class RoomsService {
     await this.userRoomsRepository.save({
       ...existedUserRoom,
       totalScore: totalScore + userAnswerScore,
+      totalCorrectAnswer:
+        isCorrect?.toString() === 'true'
+          ? totalCorrectAnswer + 1
+          : totalCorrectAnswer,
     });
 
     return newUserAnswer;

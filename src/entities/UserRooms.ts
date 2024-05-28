@@ -30,6 +30,9 @@ export class UserRooms {
   @Column('bigint', { name: 'total_score', nullable: true })
   totalScore: number | null;
 
+  @Column('bigint', { name: 'total_correct_answer', nullable: true })
+  totalCorrectAnswer: number | null;
+
   @Column('bigint', { name: 'rank', nullable: true })
   rank: number | null;
 

@@ -22,6 +22,7 @@ import {
 import { Rooms } from 'src/entities/Rooms';
 import { Questions } from 'src/entities/Questions';
 import { UserAnswers } from 'src/entities/UserAnswers';
+import { RoomsService } from './rooms.service';
 @Injectable()
 export class UsersService {
   constructor(
@@ -35,6 +36,7 @@ export class UsersService {
     private questionsRepository: Repository<Questions>,
     @InjectRepository(UserAnswers)
     private userAnswersRepository: Repository<UserAnswers>,
+    private readonly roomsService: RoomsService,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -228,6 +230,12 @@ export class UsersService {
 
   async getOrganizingHistory(dto: OrganizingHistoryDto, userId: string) {
     const { page, take, roomId } = dto;
+    const existedRoom = await this.roomsService.findRoomById(roomId);
+
+    if (!existedRoom) {
+      throw new HttpException('Room not found', HttpStatus.BAD_REQUEST);
+    }
+
     const [userRooms, count] = await this.userRoomsRepository
       .createQueryBuilder('uR')
       .leftJoinAndSelect('uR.user', 'user')
@@ -235,9 +243,11 @@ export class UsersService {
       .where(
         `
         room.deletedAt is null
-        ${roomId ? ' and room.id = :roomId' : ''}
+        ${userId ? ' and room.createdBy = :userId' : ''}
+        ${roomId ? ' and uR.roomId = :roomId' : ''}
         `,
         {
+          ...(userId ? { userId } : {}),
           ...(roomId ? { roomId } : {}),
         },
       )
@@ -246,10 +256,21 @@ export class UsersService {
       .skip(getSkip({ page, take }))
       .getManyAndCount();
 
+    const { quizId } = existedRoom;
+
+    const totalQuestion = await this.questionsRepository
+      .createQueryBuilder('q')
+      .leftJoin('q.quiz', 'quiz')
+      .where('quiz.deletedAt is null and q.quizId = :quizId', {
+        quizId,
+      })
+      .getCount();
+
     return new PaginationDto(userRooms, <PageMetaDto>{
       page,
       take,
       totalCount: count,
+      totalQuestion,
     });
   }
 }
