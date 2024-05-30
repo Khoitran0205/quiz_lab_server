@@ -443,4 +443,22 @@ export class QuizzesService {
       totalCount: count,
     });
   }
+
+  async findQuestionsById(questionId: string) {
+    const existedQuestion = await this.questionsRepository
+      .createQueryBuilder('q')
+      .leftJoinAndSelect('q.options', 'options')
+      .where(
+        `
+        q.quizId is not null
+        ${questionId ? ' and q.id = :questionId' : ''}
+        `,
+        {
+          ...(questionId ? { questionId } : {}),
+        },
+      )
+      .getOne();
+
+    return existedQuestion;
+  }
 }

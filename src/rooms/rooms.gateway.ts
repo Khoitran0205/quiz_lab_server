@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
+import { QuizzesService } from 'src/services/quizzes.service';
 import { RoomsService } from 'src/services/rooms.service';
 import { UsersService } from 'src/services/users.service';
 
@@ -18,6 +19,7 @@ export class RoomsGateway {
   constructor(
     private readonly roomsService: RoomsService,
     private readonly usersService: UsersService,
+    private readonly quizzesService: QuizzesService,
   ) {
     this.listActiveRoom = [];
   }
@@ -113,7 +115,9 @@ export class RoomsGateway {
     const { roomCode, questionId } = data;
     await this.findAndValidateRoomByCode(roomCode);
 
-    socket.broadcast.to(roomCode).emit('startQuestion', { questionId });
+    const question = await this.quizzesService.findQuestionsById(questionId);
+
+    socket.broadcast.to(roomCode).emit('startQuestion', { question });
   }
 
   @SubscribeMessage('answerQuestion')
