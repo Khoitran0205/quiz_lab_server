@@ -113,6 +113,8 @@ export class RoomsGateway {
   @SubscribeMessage('startQuestion')
   async handleStartQuestion(socket: Socket, data: any) {
     const { roomCode, questionId } = data;
+    console.log('startQuestion');
+
     await this.findAndValidateRoomByCode(roomCode);
 
     const question = await this.quizzesService.findQuestionsById(questionId);
