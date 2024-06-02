@@ -6,7 +6,7 @@ import {
   UserRoomFilter,
 } from '../rooms/dto/rooms.dto';
 import { Rooms } from 'src/entities/Rooms';
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QuizzesService } from './quizzes.service';
 import { generateRoomCode } from 'src/shared/utils';
@@ -241,7 +241,7 @@ export class RoomsService {
       : 0;
   }
 
-  async updateRankOfARoom(roomId: string) {
+  async updateRankOfARoom(roomId: string, userId: string) {
     const existedRoom = await this.findRoomById(roomId);
     if (!existedRoom)
       throw new HttpException('room not found', HttpStatus.BAD_REQUEST);
@@ -249,6 +249,7 @@ export class RoomsService {
     const existedUserRooms = await this.userRoomsRepository.find({
       where: {
         roomId,
+        userId: Not(userId),
       },
     });
 
