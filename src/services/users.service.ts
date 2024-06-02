@@ -256,27 +256,28 @@ export class UsersService {
       throw new HttpException('Room not found', HttpStatus.BAD_REQUEST);
     }
 
+    const { quizId, createdBy } = existedRoom;
+
     const [userRooms, count] = await this.userRoomsRepository
       .createQueryBuilder('uR')
       .leftJoinAndSelect('uR.user', 'user')
       .leftJoin('uR.room', 'room')
       .where(
         `
-        room.deletedAt is null
+        room.deletedAt is null and uR.userId != :createdBy
         ${userId ? ' and room.createdBy = :userId' : ''}
         ${roomId ? ' and uR.roomId = :roomId' : ''}
         `,
         {
           ...(userId ? { userId } : {}),
           ...(roomId ? { roomId } : {}),
+          createdBy,
         },
       )
       .orderBy('uR.rank', 'ASC')
       .take(take)
       .skip(getSkip({ page, take }))
       .getManyAndCount();
-
-    const { quizId } = existedRoom;
 
     const totalQuestion = await this.questionsRepository
       .createQueryBuilder('q')
