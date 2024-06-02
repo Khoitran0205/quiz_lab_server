@@ -179,7 +179,7 @@ export class UsersService {
       .getOne();
 
     const { userId: userRoomUserId, roomId, room } = existedUserRoom;
-    const { quizId } = room;
+    const { quizId, createdBy } = room;
 
     if (!existedUserRoom)
       throw new HttpException(
@@ -198,9 +198,10 @@ export class UsersService {
       .leftJoin('uR.user', 'user')
       .leftJoin('uR.room', 'room')
       .where(
-        'user.deletedAt is null and room.deletedAt is null and room.id = :roomId',
+        'user.deletedAt is null and room.deletedAt is null and uR.userId != :createdBy and room.id = :roomId',
         {
           roomId,
+          createdBy,
         },
       )
       .getCount();
