@@ -122,7 +122,9 @@ export class UsersService {
       .where(
         `
         quiz.deletedAt is null
-        ${userId ? ' and uR.userId = :userId' : ''}
+        ${
+          userId ? ' and uR.userId = :userId and room.createdBy != :userId' : ''
+        }
         `,
         {
           ...(userId ? { userId } : {}),
@@ -220,11 +222,28 @@ export class UsersService {
       })
       .getCount();
 
+    const top3Player = await this.userRoomsRepository
+      .createQueryBuilder('uR')
+      .leftJoinAndSelect('uR.user', 'user')
+      .leftJoin('uR.room', 'room')
+      .where(
+        `
+      room.deletedAt is null and uR.rank <= 3 and uR.rank != 0
+      and room.id = :roomId
+      `,
+        {
+          ...(roomId ? { roomId } : {}),
+        },
+      )
+      .orderBy('uR.rank', 'ASC')
+      .getMany();
+
     return {
       userRoom: existedUserRoom,
       totalPLayer,
       totalQuestion,
       totalCorrectAnswer,
+      top3Player,
     };
   }
 
