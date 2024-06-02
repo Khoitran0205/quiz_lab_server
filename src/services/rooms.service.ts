@@ -236,9 +236,12 @@ export class RoomsService {
     questionTimer: number,
     isCorrect: boolean,
   ) {
-    return isCorrect.toString() === 'true'
-      ? (MAX_QUESTION_SCORE / questionTimer) * (questionTimer - timer)
-      : 0;
+    const score =
+      isCorrect.toString() === 'true'
+        ? (MAX_QUESTION_SCORE / questionTimer) * (questionTimer - timer)
+        : 0;
+
+    return Math.round(score);
   }
 
   async updateRankOfARoom(roomId: string, userId: string) {
