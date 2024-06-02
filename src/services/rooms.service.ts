@@ -141,7 +141,13 @@ export class RoomsService {
   }
 
   async answerQuestion(dto: UserAnswerQuestionDto, userId: string) {
-    const { roomId, questionId, optionId, timer } = dto;
+    const { roomCode, questionId, optionId, timer } = dto;
+
+    const existedRoom = await this.findRoomByCode(roomCode);
+    if (!existedRoom)
+      throw new HttpException('room not found', HttpStatus.BAD_REQUEST);
+
+    const { id: roomId } = existedRoom;
 
     const existedUserRoom = await this.checkIfUserHasJoinedRoom(roomId, userId);
     if (!existedUserRoom)

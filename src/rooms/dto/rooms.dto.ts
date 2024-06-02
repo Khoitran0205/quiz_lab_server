@@ -22,7 +22,7 @@ export class UserJoinRoomDto {
 export class UserAnswerQuestionDto {
   @ApiProperty({ required: true })
   @IsNotEmpty()
-  roomId: string | null;
+  roomCode: string | null;
 
   @ApiProperty({ required: true })
   @IsNotEmpty()
