@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
   CreateRoomDto,
+  GetUserAnswerDto,
   UserAnswerQuestionDto,
   UserJoinRoomDto,
   UserRoomFilter,
@@ -298,5 +299,28 @@ export class RoomsService {
       take,
       totalCount: count,
     });
+  }
+
+  async getUserAnswers(dto: GetUserAnswerDto) {
+    const { roomCode, questionId } = dto;
+    const userAnswers = await this.userAnswersRepository
+      .createQueryBuilder('uA')
+      .leftJoin('uA.userRoom', 'userRoom')
+      .leftJoin('userRoom.room', 'room')
+      .where(
+        `
+        uA.questionId is not null
+        ${roomCode ? ' and room.code = :roomCode' : ''}
+        ${questionId ? ' and uA.questionId = :questionId' : ''}
+        `,
+        {
+          ...(roomCode ? { roomCode } : {}),
+          ...(questionId ? { questionId } : {}),
+        },
+      )
+      .orderBy('uA.id', 'DESC')
+      .getMany();
+
+    return userAnswers;
   }
 }

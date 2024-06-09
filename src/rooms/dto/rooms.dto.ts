@@ -12,6 +12,16 @@ export class CreateRoomDto {
   quizId: string | null;
 }
 
+export class GetUserAnswerDto {
+  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  roomCode: string | null;
+
+  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  questionId: string | null;
+}
+
 export class UserJoinRoomDto {
   @ApiProperty({ required: true })
   @IsNotEmpty()

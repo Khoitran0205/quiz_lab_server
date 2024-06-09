@@ -12,6 +12,7 @@ import {
 import { RoomsService } from '../services/rooms.service';
 import {
   CreateRoomDto,
+  GetUserAnswerDto,
   UserAnswerQuestionDto,
   UserJoinRoomDto,
   UserRoomFilter,
@@ -45,6 +46,16 @@ export class RoomsController {
     @Query() dto: UserRoomFilter,
   ) {
     const data = await this.roomsService.getUsers(roomId, dto);
+    return {
+      message: 'get successfully',
+      data,
+    };
+  }
+
+  @ApiOperation({ summary: 'Get answers of a question' })
+  @Get('get-user-answers/')
+  async getUserAnswers(@Query() dto: GetUserAnswerDto) {
+    const data = await this.roomsService.getUserAnswers(dto);
     return {
       message: 'get successfully',
       data,
