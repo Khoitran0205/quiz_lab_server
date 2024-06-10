@@ -142,10 +142,10 @@ export class RoomsGateway {
 
   @SubscribeMessage('endQuiz')
   async handleEndQuiz(socket: Socket, data: any) {
-    const { roomCode } = data;
+    const { roomCode, roomId } = data;
     await this.findAndValidateRoomByCode(roomCode);
 
-    socket.broadcast.to(roomCode).emit('endQuiz');
+    socket.broadcast.to(roomCode).emit('endQuiz', { roomId });
   }
 
   async handleDisconnect(socket: Socket) {
