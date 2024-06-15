@@ -218,9 +218,12 @@ export class UsersService {
       .createQueryBuilder('uA')
       .leftJoin('uA.question', 'question')
       .leftJoin('question.quiz', 'quiz')
-      .where('quiz.deletedAt is null and uA.score > 0 and quiz.id = :quizId', {
-        quizId,
-      })
+      .where(
+        'quiz.deletedAt is null and uA.score > 0 and uA.userRoomId = :userRoomId',
+        {
+          userRoomId,
+        },
+      )
       .getCount();
 
     const top3Player = await this.userRoomsRepository
