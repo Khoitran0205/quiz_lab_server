@@ -187,7 +187,7 @@ export class RoomsService {
 
     await this.userRoomsRepository.save({
       ...existedUserRoom,
-      totalScore: totalScore + userAnswerScore,
+      totalScore: +totalScore + +userAnswerScore,
       totalCorrectAnswer:
         isCorrect?.toString() === 'true'
           ? totalCorrectAnswer + 1
