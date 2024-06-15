@@ -52,7 +52,7 @@ export class RoomsController {
     };
   }
 
-  @ApiOperation({ summary: 'Get users of a room' })
+  @ApiOperation({ summary: 'Get rank of a user in a room' })
   @Get('get-my-rank/:roomId')
   async getMyRank(@Req() req, @Param('roomId') roomId: string) {
     const { id: userId } = req?.user;
