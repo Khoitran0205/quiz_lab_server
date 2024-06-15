@@ -52,6 +52,17 @@ export class RoomsController {
     };
   }
 
+  @ApiOperation({ summary: 'Get users of a room' })
+  @Get('get-my-rank/:roomId')
+  async getMyRank(@Req() req, @Param('roomId') roomId: string) {
+    const { id: userId } = req?.user;
+    const data = await this.roomsService.getMyRank(roomId, userId);
+    return {
+      message: 'get successfully',
+      data,
+    };
+  }
+
   @ApiOperation({ summary: 'Get answers of a question' })
   @Get('get-user-answers/')
   async getUserAnswers(@Query() dto: GetUserAnswerDto) {

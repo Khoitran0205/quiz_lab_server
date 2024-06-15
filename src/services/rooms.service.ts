@@ -329,4 +329,13 @@ export class RoomsService {
 
     return userAnswers;
   }
+
+  async getMyRank(roomId: string, userId: string) {
+    return await this.userRoomsRepository.findOne({
+      where: {
+        roomId,
+        userId,
+      },
+    });
+  }
 }
