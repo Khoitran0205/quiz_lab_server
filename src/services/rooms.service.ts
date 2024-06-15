@@ -269,7 +269,13 @@ export class RoomsService {
         },
       );
 
-      return await this.userRoomsRepository.save(preparedSortedUserRooms);
+      await this.userRoomsRepository.save(preparedSortedUserRooms);
+
+      return await this.getUsers(roomId, {
+        page: 1,
+        take: 99999,
+        skip: 0,
+      });
     }
 
     return {};
