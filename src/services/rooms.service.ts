@@ -190,7 +190,7 @@ export class RoomsService {
       totalScore: +totalScore + +userAnswerScore,
       totalCorrectAnswer:
         isCorrect?.toString() === 'true'
-          ? totalCorrectAnswer + 1
+          ? +totalCorrectAnswer + 1
           : totalCorrectAnswer,
     });
 
