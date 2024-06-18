@@ -253,12 +253,12 @@ export class RoomsService {
     const existedUserRooms = await this.userRoomsRepository.find({
       where: {
         roomId,
-        userId: Not(userId),
       },
     });
 
     if (existedUserRooms?.length > 0) {
       existedUserRooms?.sort((a, b) => b.totalScore - a.totalScore);
+
       const preparedSortedUserRooms = existedUserRooms?.map(
         (userRoom, index) => {
           const rank = index + 1;
