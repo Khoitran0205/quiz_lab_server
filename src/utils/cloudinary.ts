@@ -58,8 +58,10 @@ export class CloudinaryService {
 
   async deletePicture(data: string[] | string) {
     try {
-      const prepareDeletedUrl = await this.prepareListDeletedUrl(data);
-      await cloudinary.api.delete_resources(prepareDeletedUrl);
+      if (data?.length > 0) {
+        const prepareDeletedUrl = await this.prepareListDeletedUrl(data);
+        await cloudinary.api.delete_resources(prepareDeletedUrl);
+      }
     } catch (error) {
       throw new HttpException(error, HttpStatus.BAD_REQUEST);
     }
