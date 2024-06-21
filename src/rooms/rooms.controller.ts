@@ -53,10 +53,10 @@ export class RoomsController {
   }
 
   @ApiOperation({ summary: 'Get rank of a user in a room' })
-  @Get('get-my-rank/:roomId')
-  async getMyRank(@Req() req, @Param('roomId') roomId: string) {
+  @Get('get-my-rank/:roomCode')
+  async getMyRank(@Req() req, @Param('roomCode') roomCode: string) {
     const { id: userId } = req?.user;
-    const data = await this.roomsService.getMyRank(roomId, userId);
+    const data = await this.roomsService.getMyRank(roomCode, userId);
     return {
       message: 'get successfully',
       data,

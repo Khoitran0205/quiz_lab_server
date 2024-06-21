@@ -330,7 +330,10 @@ export class RoomsService {
     return userAnswers;
   }
 
-  async getMyRank(roomId: string, userId: string) {
+  async getMyRank(roomCode: string, userId: string) {
+    const existedRoom = await this.findRoomByCode(roomCode);
+
+    const { id: roomId } = existedRoom;
     return await this.userRoomsRepository.findOne({
       where: {
         roomId,
