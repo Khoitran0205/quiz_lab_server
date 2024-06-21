@@ -193,7 +193,7 @@ export class UsersService {
         HttpStatus.BAD_REQUEST,
       );
 
-    const totalPLayer = await this.userRoomsRepository
+    const totalPlayer = await this.userRoomsRepository
       .createQueryBuilder('uR')
       .leftJoin('uR.user', 'user')
       .leftJoin('uR.room', 'room')
@@ -244,7 +244,7 @@ export class UsersService {
 
     return {
       userRoom: existedUserRoom,
-      totalPLayer,
+      totalPlayer,
       totalQuestion,
       totalCorrectAnswer,
       top3Player,
